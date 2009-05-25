@@ -10,6 +10,6 @@ Usage
 Note
 ===========
 
-FtpSync doesn't work for FTP server on Windows. Sorry Windows guys. I don't have a chance to test running it on Windows to sync to ftp server on Linux, either.
+FtpSync doesn't work for FTP server on Windows. Sorry Windows guys. I don't have a chance to test running it on Windows to sync to ftp server on *nix, either.
 
 It's extracted from my personal project, use it at your own risk.
