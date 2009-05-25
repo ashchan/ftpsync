@@ -1,4 +1,4 @@
-FtpSync is a simple class to sync local directory to a remote ftp directory, or copy directories on remote server.
+FtpSync is a simple Ruby class to sync local directory to a remote ftp directory, or copy directories on remote server.
 
 Usage
 ===========
