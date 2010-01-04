@@ -94,8 +94,9 @@ class FtpSync
       ftp.get(file)
     end
     
-    Dir.chdir ".."
-    ftp.chdir ".."
+    parent = ([".."] * (1 + remote_dir.count("/"))).join("/")
+    Dir.chdir(parent)
+    ftp.chdir(parent)
   end
   
   def full_file_path(file)
@@ -123,8 +124,9 @@ class FtpSync
       upload_file(file, ftp)
     end
     
-    Dir.chdir("..")
-    ftp.chdir("..")
+    parent = ([".."] * (1 + dir.count("/"))).join("/")
+    Dir.chdir(parent)
+    ftp.chdir(parent)
   end
   
   def sync_folder(local_dir, remote_dir, ftp)
@@ -171,8 +173,8 @@ class FtpSync
       sync_folder(dir, dir, ftp)
     end
     
-    Dir.chdir("..")
-    ftp.chdir("..")
+    Dir.chdir(([".."] * (1 + local_dir.count("/"))).join("/"))
+    ftp.chdir(([".."] * (1 + remote_dir.count("/"))).join("/"))
   end
   
   def get_local_dir_and_file_names
