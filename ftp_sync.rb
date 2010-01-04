@@ -11,10 +11,11 @@ require 'fileutils'
 
 # simple class to sync local directory to a remote ftp directory, or copy directories on remote server
 class FtpSync
-  def initialize(host, user, password)
+  def initialize(host, user, password, passive=FALSE)
     @host = host
     @user = user
     @password = password
+    @passive = passive
   end
   
   # sync a local directory to a remote directory
@@ -22,6 +23,7 @@ class FtpSync
     ftp = Net::FTP.new(@host)
     begin
       ftp.login(@user, @password)
+      ftp.passive = @passive
       puts "logged in, start syncing..."
       
       sync_folder(local_dir, remote_dir, ftp)
@@ -41,6 +43,7 @@ class FtpSync
     ftp = Net::FTP.new(@host)
     begin
       ftp.login(@user, @password)
+      ftp.passive = @passive
       puts "logged in, start copying #{dir_source} to #{dir_dest}..."
       
       #create a tmp folder locally
