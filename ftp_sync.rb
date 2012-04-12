@@ -131,7 +131,13 @@ class FtpSync
   
   def sync_folder(local_dir, remote_dir, ftp)
     Dir.chdir local_dir
-    ftp.chdir remote_dir
+    begin
+      ftp.chdir remote_dir
+    rescue
+      # if the remote dir doesn't exist, we create it
+      ftp.mkdir remote_dir
+      ftp.chdir remote_dir
+    end
     
     put_title "process folder: #{Dir.pwd}"
     
