@@ -7,6 +7,7 @@ require 'fileutils'
 
 # ftp = FtpSync.new('ftp.site.com', 'user', 'password')
 # ftp.sync('/Users/james/Desktop/test_ftp', '/home/james/Sites')
+# ftp.backup('/home/james/Sites','/Users/james/Desktop/test_ftp')
 # ftp.copy_folder('/home/james/Sites/folder1', '/home/james/Sites/folder3')
 
 # simple class to sync local directory to a remote ftp directory, or copy directories on remote server
@@ -27,6 +28,24 @@ class FtpSync
       puts "logged in, start syncing..."
       
       sync_folder(local_dir, remote_dir, ftp)
+      
+      puts "sync finished"
+      
+    rescue Net::FTPPermError => e
+      puts "Failed: #{e.message}"
+      return false
+    end
+  end
+
+  # backup a remote directory to a local directory
+  def backup( remote_dir, local_dir)
+    ftp = Net::FTP.new(@host)
+    begin
+      ftp.login(@user, @password)
+      ftp.passive = @passive
+      puts "logged in, start syncing..."
+      
+      backup_folder( remote_dir,local_dir, ftp)
       
       puts "sync finished"
       
@@ -177,6 +196,83 @@ class FtpSync
     
     existing_dirs.each do |dir|
       sync_folder(dir, dir, ftp)
+    end
+    
+    Dir.chdir(([".."] * (1 + local_dir.count("/"))).join("/"))
+    ftp.chdir(([".."] * (1 + remote_dir.count("/"))).join("/"))
+  end
+
+  def backup_folder( remote_dir,local_dir, ftp)
+    begin
+      Dir.chdir local_dir
+    rescue
+      Dir.mkdir local_dir
+      Dir.chdir local_dir
+    end
+
+    begin
+      ftp.chdir remote_dir
+    rescue
+      # if the remote dir doesn't exist, we create it
+      puts "remote dir doesn't exist!"
+      return false
+    end
+    
+    put_title "process folder: #{Dir.pwd}"
+    
+    local_dirs, local_files = get_local_dir_and_file_names
+    remote_dirs, remote_files = get_remote_dir_and_file_names(ftp)
+
+    new_dirs = remote_dirs - local_dirs 
+    new_files =  remote_files -local_files
+
+    removed_dirs = local_dirs - remote_dirs
+    removed_files = local_files - remote_files
+
+    existing_dirs = local_dirs - new_dirs -removed_dirs
+    existing_files = local_files - new_files - removed_files
+    
+    # put_title "new dirs"
+    # puts new_dirs
+    # put_title "new files"
+    # puts new_files
+    # put_title "existing dirs"
+    # puts existing_dirs
+    # put_title "existing files"
+    # puts existing_files
+    
+    removed_dirs.each do |dir|
+#rm dir
+      FileUtils.rm_rf dir
+    end
+        
+    removed_files.each do |file|
+#rm file      
+      FileUtils.rm_rf file
+    end
+
+    new_files.each do |file|
+      ftp.get(file)
+    end
+   
+
+    existing_files.each do |file|
+      remote_size = ftp.size(file)
+
+      local_size = File.new(file).size
+#      puts file, remote_size ,local_size
+      if remote_size != local_size
+        put_title "#{full_file_path(file)} needs update"
+        ftp.get(file)
+      end
+    end
+
+    new_dirs.each do |dir|
+      download_folder(dir, ftp)
+    end
+    
+    existing_dirs.each do |dir|
+      backup_folder(dir, dir, ftp)
     end
     
     Dir.chdir(([".."] * (1 + local_dir.count("/"))).join("/"))
