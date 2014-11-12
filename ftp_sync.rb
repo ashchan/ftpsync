@@ -18,7 +18,7 @@ class FtpSync
     @password = password
     @passive = passive
   end
-  
+
   # sync a local directory to a remote directory
   def sync(local_dir, remote_dir)
     ftp = Net::FTP.new(@host)
@@ -26,11 +26,11 @@ class FtpSync
       ftp.login(@user, @password)
       ftp.passive = @passive
       puts "logged in, start syncing..."
-      
+
       sync_folder(local_dir, remote_dir, ftp)
-      
+
       puts "sync finished"
-      
+
     rescue Net::FTPPermError => e
       puts "Failed: #{e.message}"
       return false
@@ -44,17 +44,17 @@ class FtpSync
       ftp.login(@user, @password)
       ftp.passive = @passive
       puts "logged in, start syncing..."
-      
+
       backup_folder( remote_dir,local_dir, ftp)
-      
+
       puts "sync finished"
-      
+
     rescue Net::FTPPermError => e
       puts "Failed: #{e.message}"
       return false
     end
   end
-  
+
   # copy a remote directory to another location
   # dir_dest should not contain the final dir name, but its parent dir, .eg:
   # copy_folder('/home/james/test/folder', '/home/james/') will eventually create /home/james/folder
@@ -64,7 +64,7 @@ class FtpSync
       ftp.login(@user, @password)
       ftp.passive = @passive
       puts "logged in, start copying #{dir_source} to #{dir_dest}..."
-      
+
       #create a tmp folder locally
       tmp_folder = "tmp"
       while File.exist?(tmp_folder) do
@@ -72,7 +72,7 @@ class FtpSync
       end
       FileUtils.mkdir tmp_folder
       Dir.chdir tmp_folder
-      
+
       #download whole folder
       ftp.chdir File.dirname(dir_source)
       target = File.basename(dir_source)
@@ -81,73 +81,73 @@ class FtpSync
       #upload to dest
       ftp.chdir dir_dest
       upload_folder(target, ftp)
-      
+
       #todo delete local tmp folder
       Dir.chdir ".."
       FileUtils.rm_rf tmp_folder
 
       puts "copy finished"
-      
+
     rescue Net::FTPPermError => e
       puts "Failed: #{e.message}"
     end    
   end
-  
+
   private 
   def put_title(title)
     puts "#{'-'*80}\n#{title}:\n\n"
   end
-  
+
   def download_folder(remote_dir, ftp)
     ftp.chdir remote_dir   
     FileUtils.mkdir remote_dir
     Dir.chdir remote_dir
-    
+
     dirs, files = get_remote_dir_and_file_names(ftp)
-    
+
     dirs.each do |dir|
       download_folder(dir, ftp)
     end
-    
+
     files.each do |file|
       ftp.get(file)
     end
-    
+
     parent = ([".."] * (1 + remote_dir.count("/"))).join("/")
     Dir.chdir(parent)
     ftp.chdir(parent)
   end
-  
+
   def full_file_path(file)
     File.join(Dir.pwd, file)
   end
-  
+
   def upload_file(file, ftp)
     put_title "upload file: #{full_file_path(file)}"
     ftp.put(file)
   end
-  
+
   def upload_folder(dir, ftp)
     put_title "upload folder: #{full_file_path(dir)}"
     Dir.chdir dir
     ftp.mkdir dir
     ftp.chdir dir
-      
+
     local_dirs, local_files = get_local_dir_and_file_names
-    
+
     local_dirs.each do |subdir|
       upload_folder(subdir, ftp)
     end
-    
+
     local_files.each do |file|
       upload_file(file, ftp)
     end
-    
+
     parent = ([".."] * (1 + dir.count("/"))).join("/")
     Dir.chdir(parent)
     ftp.chdir(parent)
   end
-  
+
   def sync_folder(local_dir, remote_dir, ftp)
     Dir.chdir local_dir
     begin
@@ -157,9 +157,9 @@ class FtpSync
       ftp.mkdir remote_dir
       ftp.chdir remote_dir
     end
-    
+
     put_title "process folder: #{Dir.pwd}"
-    
+
     local_dirs, local_files = get_local_dir_and_file_names
     remote_dirs, remote_files = get_remote_dir_and_file_names(ftp)
 
@@ -167,7 +167,7 @@ class FtpSync
     new_files = local_files - remote_files
     existing_dirs = local_dirs - new_dirs
     existing_files = local_files - new_files
-    
+
     # put_title "new dirs"
     # puts new_dirs
     # put_title "new files"
@@ -176,11 +176,11 @@ class FtpSync
     # puts existing_dirs
     # put_title "existing files"
     # puts existing_files
-    
+
     new_files.each do |file|
       upload_file(file, ftp)
     end
-    
+
     existing_files.each do |file|
       remote_time = ftp.mtime(file, false)
       local_time = File.new(file).mtime
@@ -189,15 +189,15 @@ class FtpSync
         upload_file(file, ftp)
       end
     end
-    
+
     new_dirs.each do |dir|
       upload_folder(dir, ftp)
     end
-    
+
     existing_dirs.each do |dir|
       sync_folder(dir, dir, ftp)
     end
-    
+
     Dir.chdir(([".."] * (1 + local_dir.count("/"))).join("/"))
     ftp.chdir(([".."] * (1 + remote_dir.count("/"))).join("/"))
   end
@@ -217,9 +217,9 @@ class FtpSync
       puts "remote dir doesn't exist!"
       return false
     end
-    
+
     put_title "process folder: #{Dir.pwd}"
-    
+
     local_dirs, local_files = get_local_dir_and_file_names
     remote_dirs, remote_files = get_remote_dir_and_file_names(ftp)
 
@@ -231,7 +231,7 @@ class FtpSync
 
     existing_dirs = local_dirs - new_dirs -removed_dirs
     existing_files = local_files - new_files - removed_files
-    
+
     # put_title "new dirs"
     # puts new_dirs
     # put_title "new files"
@@ -240,27 +240,27 @@ class FtpSync
     # puts existing_dirs
     # put_title "existing files"
     # puts existing_files
-    
+
     removed_dirs.each do |dir|
-#rm dir
+      #rm dir
       FileUtils.rm_rf dir
     end
-        
+
     removed_files.each do |file|
-#rm file      
+      #rm file      
       FileUtils.rm_rf file
     end
 
     new_files.each do |file|
       ftp.get(file)
     end
-   
+
 
     existing_files.each do |file|
       remote_size = ftp.size(file)
 
       local_size = File.new(file).size
-#      puts file, remote_size ,local_size
+      #      puts file, remote_size ,local_size
       if remote_size != local_size
         put_title "#{full_file_path(file)} needs update"
         ftp.get(file)
@@ -270,15 +270,15 @@ class FtpSync
     new_dirs.each do |dir|
       download_folder(dir, ftp)
     end
-    
+
     existing_dirs.each do |dir|
       backup_folder(dir, dir, ftp)
     end
-    
+
     Dir.chdir(([".."] * (1 + local_dir.count("/"))).join("/"))
     ftp.chdir(([".."] * (1 + remote_dir.count("/"))).join("/"))
   end
-  
+
   def get_local_dir_and_file_names
     dirs = []
     files = []
@@ -291,7 +291,7 @@ class FtpSync
     end
     return [dirs, files]
   end
-  
+
   def get_remote_dir_and_file_names(ftp)
     dirs = []
     files = []
